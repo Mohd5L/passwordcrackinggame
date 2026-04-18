@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GUtech // Cipher Challenge</title>
+    <style>
+        /* GUtech Inspired Color Palette */
+        :root {
+            --gutech-red: #b22222;
+            --gutech-red-hover: #8b0000;
+            --light-grey: #f5f5f5;
+            --medium-grey: #e2e8f0;
+            --dark-grey: #475569;
+            --text-main: #1e293b;
+            --white: #ffffff;
+            --success: #16a34a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-grey);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 650px;
+            background: var(--white);
+            padding: 35px;
+            border-radius: 2px; /* GUtech style often uses sharper, professional edges */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-top: 8px solid var(--gutech-red);
+        }
+
+        .header {
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--medium-grey);
+            padding-bottom: 15px;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--gutech-red);
+            font-size: 1.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setup-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        select {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--medium-grey);
+            border-radius: 4px;
+            background: var(--white);
+            font-size: 0.9rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--gutech-red);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--gutech-red-hover);
+        }
+
+        /* Game UI */
+        .display-label {
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: var(--dark-grey);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .cipher-window {
+            background: #2d3748;
+            color: #edf2f7;
+            padding: 20px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            word-break: break-all;
+            text-align: center;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hint-text {
+            color: var(--gutech-red);
+            background: #fff5f5;
+            padding: 10px;
+            border-left: 4px solid var(--gutech-red);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 12px;
+            border: 2px solid var(--medium-grey);
+            border-radius: 4px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--gutech-red);
+        }
+
+        .footer-info {
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 1px solid var(--medium-grey);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--dark-grey);
+        }
+
+        #feedback {
+            font-weight: bold;
+        }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>GUtech Security Lab</h1>
+    </div>
+
+    <div class="setup-section">
+        <select id="levelSelect">
+            <option value="1">Level 1: Caesar Shift</option>
+            <option value="2">Level 2: Substitution (Key Hint)</option>
+            <option value="3">Level 3: Frequency Analysis</option>
+            <option value="4">Level 4: Blackout (No Hints)</option>
+        </select>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+
+    <div id="gameArea" class="hidden">
+        <span class="display-label">TARGET ENCRYPTION:</span>
+        <div class="cipher-window" id="encryptedDisplay"></div>
+
+        <div id="hintArea" class="hint-text"></div>
+
+        <div class="input-group">
+            <input type="text" id="userGuess" placeholder="gutech{flag_here}" autocomplete="off">
+            <button onclick="checkGuess()">Verify</button>
+        </div>
+
+        <div class="footer-info">
+            <span>Attempts: <span id="guessCount" style="color: var(--gutech-red);">0</span></span>
+            <span id="feedback"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const phrases = [
+        "CYBERSECURITY",
+        "BLOCKCHAIN",
+        "DATABASE",
+        "PROGRAMMING",
+        "ALGORITHM",
+        "GUtechLABS",
+        "NETWORK"
+    ];
+
+    let rawPhrase = "";
+    let targetFlag = "";
+    let encryptedFlag = "";
+    let guesses = 0;
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+    function startGame() {
+        const level = document.getElementById("levelSelect").value;
+        rawPhrase = phrases[Math.floor(Math.random() * phrases.length)].toUpperCase();
+        
+        // Formulate the proper GUtech flag
+        targetFlag = `gutech{${rawPhrase}}`;
+        guesses = 0;
+        
+        document.getElementById("guessCount").innerText = guesses;
+        document.getElementById("feedback").innerText = "";
+        document.getElementById("userGuess").value = "";
+        document.getElementById("gameArea").classList.remove("hidden");
+
+        let cipherMap = generateCipher(level);
+        
+        // Only encrypt the content INSIDE the braces
+        let encryptedInner = rawPhrase.split('').map(char => {
+            return alphabet.includes(char) ? cipherMap[char] : char;
+        }).join('');
+        
+        encryptedFlag = `gutech{${encryptedInner}}`;
+        
+        document.getElementById("encryptedDisplay").innerText = encryptedFlag;
+        provideHints(level, cipherMap, rawPhrase);
+    }
+
+    function generateCipher(level) {
+        let map = {};
+        if (level == "1") {
+            let shift = Math.floor(Math.random() * 25) + 1;
+            alphabet.forEach((char, i) => {
+                map[char] = alphabet[(i + shift) % 26];
+            });
+        } else {
+            let shuffled = [...alphabet].sort(() => Math.random() - 0.5);
+            alphabet.forEach((char, i) => {
+                map[char] = shuffled[i];
+            });
+        }
+        return map;
+    }
+
+    function provideHints(level, map, original) {
+        const hintArea = document.getElementById("hintArea");
+        hintArea.classList.remove("hidden");
+        
+        if (level == "1") {
+            hintArea.innerText = "System Log: A fixed shift (Caesar) was detected.";
+        } else if (level == "2") {
+            let char = original[0];
+            hintArea.innerText = `Decryption Hint: The letter '${char}' is mapped to '${map[char]}'`;
+        } else if (level == "3") {
+            let counts = {};
+            original.split('').forEach(c => {
+                let enc = map[c];
+                counts[enc] = (counts[enc] || 0) + 1;
+            });
+            let top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+            hintArea.innerText = `Frequency Analysis: '${top}' is the most common encrypted character.`;
+        } else {
+            hintArea.classList.add("hidden");
+        }
+    }
+
+    function checkGuess() {
+        let guess = document.getElementById("userGuess").value.trim();
+        if (!guess) return;
+
+        guesses++;
+        document.getElementById("guessCount").innerText = guesses;
+
+        const feedback = document.getElementById("feedback");
+        if (guess.toLowerCase() === targetFlag.toLowerCase()) {
+            feedback.innerText = "SUCCESS: ACCESS GRANTED";
+            feedback.style.color = "var(--success)";
+            setTimeout(() => {
+                alert(`Excellent work! Resolved in ${guesses} attempts.`);
+                startGame();
+            }, 300);
+        } else {
+            feedback.innerText = "DENIED: INVALID FLAG";
+            feedback.style.color = "var(--gutech-red)";
+        }
+    }
+
+    // Enter key listener
+    document.getElementById("userGuess").addEventListener("keypress", (e) => {
+        if (e.key === "Enter") checkGuess();
+    });
+</script>
+
+</body>
+</html>
